@@ -1,0 +1,10 @@
+﻿"Symbol";"Value";"Unit";
+"TraceParts.PartNumber";"32-02112010-103329";"";
+"REFERENCE";"30 HTD8M 720 NB";"";
+"TraceParts.PartTitle";"Synchron Belt, HTD 8M";"";
+"TraceParts.InstanceId";"32-02112010-103329244DB4OBRQTDGWCY5TAWFB26L";"";
+"SUPPLIER";"Gates";"";
+"DESIGN";"Synchron Belt, HTD 8M width = 30, length = 720, Nylon Back";"";
+"TRACEPARTS";"TRACEPARTS";"";
+"TraceParts.PartLanguage";"en";"";
+"TraceParts.PartVersion";"1.1.3";"";

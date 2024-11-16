@@ -1,0 +1,14 @@
+﻿"Symbol";"Value";"Unit";
+"REFERENCE";"17510500";"";
+"TraceParts.PartVersion";"1.0.5";"";
+"SUPPLIER";"MÄDLER GmbH";"";
+"TraceParts.PartNumber";"90-13122023-056786";"";
+"weight";"0,128";"";
+"customs";"40103900";"";
+"type";"480-8M-20";"";
+"eclass";"23-17-02-05";"";
+"TraceParts.PartLanguage";"en";"";
+"DESIGN";"Timing belt profile HTD-8M, belt width 20mm, effective length 480mm, number of teeth 60";"";
+"TraceParts.InstanceId";"90-13122023-0567862N3XX9WWY2MK673V115V3T3RA";"";
+"TraceParts.PartTitle";"HTD-Timing Belts, Profile 8M";"";
+"TRACEPARTS";"TRACEPARTS";"";

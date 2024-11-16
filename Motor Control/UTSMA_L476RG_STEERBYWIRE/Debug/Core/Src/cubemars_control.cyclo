@@ -1,0 +1,8 @@
+../Core/Src/cubemars_control.c:31:5:float_to_uint	3
+../Core/Src/cubemars_control.c:41:7:uint_to_float	1
+../Core/Src/cubemars_control.c:50:6:pack_cmd	1
+../Core/Src/cubemars_control.c:77:6:cubemars_send_can_cmd	3
+../Core/Src/cubemars_control.c:95:6:cubemars_get_can_msg	1
+../Core/Src/cubemars_control.c:110:6:unpack_reply	2
+../Core/Src/cubemars_control.c:135:6:print_motor_data	1
+../Core/Src/cubemars_control.c:139:6:print_motor_error	20
