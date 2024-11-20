@@ -8,7 +8,6 @@
 #ifndef SRC_CUBEMARS_FUNCTIONS_H_
 #define SRC_CUBEMARS_FUNCTIONS_H_
 
-#include <stdint.h>
 #include "main.h"
 
 // Special CAN Commands
@@ -59,6 +58,10 @@ void pack_cmd(uint8_t *data, float p_des, float v_des, float kp, float kd, float
 void cubemars_send_can_cmd(CAN_HandleTypeDef *hcan, CAN_TxHeaderTypeDef *TxHeader, uint32_t *TxMailbox, float p_des, float v_des, float kp, float kd, float t_ff);
 void cubemars_get_can_msg(uint8_t *RxData, int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error);
 void unpack_reply(uint8_t data[8], int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error);
+void cubemars_get_can_cmd4debug(uint8_t *RxData);
+void unpack_cmd4debug(uint8_t data[8], float *p_ref, float *v_ref, float *kp_ref, float *kd_ref, float *t_ref);
+void print_raw_data(uint8_t data[8]);
+void print_cmd4debug(float p_ref, float v_ref, float kp_ref, float kd_ref, float t_ref);
 void print_motor_data(float position, float speed, float torque, float temperature);
 void print_motor_error(mc_fault_code error_code);
 

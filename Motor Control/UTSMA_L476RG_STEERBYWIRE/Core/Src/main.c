@@ -208,8 +208,8 @@ int main(void)
   TxHeader.DLC=8;
   TxHeader.TransmitGlobalTime=DISABLE;
 
-  TxData[0]=0; TxData[1]=0; TxData[2]=0; TxData[3]=0; TxData[4]=0; TxData[5]=1; TxData[6]=1; TxData[7]=1;
-  HAL_CAN_AddTxMessage(&hcan1,&TxHeader,TxData,&TxMailbox);
+  //TxData[0]=0; TxData[1]=0; TxData[2]=0; TxData[3]=0; TxData[4]=0; TxData[5]=1; TxData[6]=1; TxData[7]=1;
+  //HAL_CAN_AddTxMessage(&hcan1,&TxHeader,TxData,&TxMailbox);
 
 
 
@@ -229,16 +229,30 @@ int main(void)
 	  //printf("Rx %d \r\n", value_2);
 
 	  // Transmit potentiometer angle to motor
-	  HAL_StatusTypeDef status = HAL_ADC_PollForConversion(&hadc1, 100);
-	  adcValue = HAL_ADC_GetValue(&hadc1);
-	  printf("ADC Value: %d. Status: %d \r\n", adcValue, status);
+	  /*HAL_StatusTypeDef status = HAL_ADC_PollForConversion(&hadc1, 100); // Wait up to 100ms
+	  if (status == HAL_OK) {
+	      uint32_t adcValue = HAL_ADC_GetValue(&hadc1);
+	      printf("ADC Value: %lu\r\n", adcValue);
+	  } else {
+	      printf("ADC Conversion Timeout or Error\r\n");
+	  }
 
-	  /*Pos_ref = map(adcValue, 0, 4095, 0, M_TWOPI);
+	  if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, CAN_CMD_ENTER_MOTOR_CONTROL_MODE, &TxMailbox) == HAL_OK) {
+		  printf("Enter.\n");
+	  }
+	  HAL_Delay(1000);
+	  if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, CAN_CMD_EXIT_MOTOR_CONTROL_MODE, &TxMailbox) == HAL_OK) {
+		  printf("Exit.\n");
+	  }
+	  HAL_ADC_Start(&hadc1);
+	  HAL_Delay(750);
+
+	  Pos_ref = map(adcValue, 0, 4095, 0, M_TWOPI);
 	  Vel_ref = 1.1;
 	  Kp = 0.5;
 	  Kd = 0.2;
-	  Trq_ff = (float)HAL_GPIO_ReadPin(RES_BUTTON_GPIO_Port, RES_BUTTON_Pin);
-	  //cubemars_send_can_cmd(&hcan1, &TxHeader, &TxMailbox, Pos_ref, Vel_ref, Kp, Kd, Trq_ff); */
+	  Trq_ff = (float)HAL_GPIO_ReadPin(RES_BUTTON_GPIO_Port, RES_BUTTON_Pin); */
+	  //cubemars_send_can_cmd(&hcan1, &TxHeader, &TxMailbox, Pos_ref, Vel_ref, Kp, Kd, Trq_ff);
 
 
 	  // Simple transmission
@@ -847,6 +861,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	HAL_CAN_GetRxMessage(&hcan1,CAN_RX_FIFO0,&RxHeader,RxData);
 	//printf("CAN Rx: %d %d %d %d %d %d %d %d %d \r\n", RxHeader.StdId, RxData[0], RxData[1], RxData[2], RxData[3], RxData[4], RxData[5], RxData[6], RxData[7]);
 	//cubemars_get_can_msg(RxData, CAN_LISTEN_ID, &position, &speed, &torque, &temperature, &error);
+	cubemars_get_can_cmd4debug(RxData);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !RxData[1]);
 	value++;
 	//printf("Rx %d \r\n", value);

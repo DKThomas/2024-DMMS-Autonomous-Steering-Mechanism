@@ -28,6 +28,15 @@ const float KD_MAX = 5.0f;
 
 // (p. 44)
 // When sending packets, all numbers need to go through the following function to be converted into integer values before being sent to the motor:
+/**
+ * @brief Converts a float value into an unsigned integer within a specified range and resolution.
+ *
+ * @param x The input float value to convert.
+ * @param x_min The minimum value of the range.
+ * @param x_max The maximum value of the range.
+ * @param bits The number of bits used to represent the unsigned integer.
+ * @return The converted unsigned integer value.
+ */
 int float_to_uint(float x, float x_min, float x_max, unsigned int bits) {
 	/// Converts a float to an unsigned int, given range and number of bits ///
 	float span = x_max - x_min;
@@ -38,6 +47,15 @@ int float_to_uint(float x, float x_min, float x_max, unsigned int bits) {
 
 // (p. 44)
 // When receiving, convert all values to floating-point numbers using the following function:
+/**
+ * @brief Converts an unsigned integer into a float within a specified range and resolution.
+ *
+ * @param x_int The input unsigned integer to convert.
+ * @param x_min The minimum value of the range.
+ * @param x_max The maximum value of the range.
+ * @param bits The number of bits used to represent the unsigned integer.
+ * @return The converted float value.
+ */
 float uint_to_float(int x_int, float x_min, float x_max, int bits) {
 	/// converts unsigned int to float, given range and number of bits ///
 	float span = x_max - x_min;
@@ -47,6 +65,16 @@ float uint_to_float(int x_int, float x_min, float x_max, int bits) {
 
 // MIT Mode Sending&Receiving Code Example (p. 43)
 // Sending Example Code:
+/**
+ * @brief Packs control parameters into an 8-byte CAN data buffer for transmission.
+ *
+ * @param data Pointer to the 8-byte CAN data buffer.
+ * @param p_des Desired position.
+ * @param v_des Desired speed.
+ * @param kp Proportional gain.
+ * @param kd Derivative gain.
+ * @param t_ff Feedforward torque.
+ */
 void pack_cmd(uint8_t *data, float p_des, float v_des, float kp, float kd, float t_ff) {
 	/// limit data to be within bounds ///
 	p_des = fminf(fmaxf(P_MIN, p_des), P_MAX);
@@ -74,6 +102,18 @@ void pack_cmd(uint8_t *data, float p_des, float v_des, float kp, float kd, float
 }
 
 // Function to send command
+/**
+ * @brief Sends a command to the CubeMars motor via CAN.
+ *
+ * @param hcan Pointer to the CAN handle.
+ * @param TxHeader Pointer to the CAN TxHeader structure.
+ * @param TxMailbox Pointer to the mailbox identifier for transmission.
+ * @param p_des Desired position.
+ * @param v_des Desired speed.
+ * @param kp Proportional gain.
+ * @param kd Derivative gain.
+ * @param t_ff Feedforward torque.
+ */
 void cubemars_send_can_cmd(CAN_HandleTypeDef *hcan, CAN_TxHeaderTypeDef *TxHeader, uint32_t *TxMailbox, float p_des, float v_des, float kp, float kd, float t_ff) {
 	// Convert and pack data
 	uint8_t data[8];
@@ -92,6 +132,17 @@ void cubemars_send_can_cmd(CAN_HandleTypeDef *hcan, CAN_TxHeaderTypeDef *TxHeade
 	}
 }
 
+/**
+ * @brief Processes a received CAN message from the CubeMars motor.
+ *
+ * @param RxData Pointer to the received CAN data buffer (8 bytes).
+ * @param target_id The ID of the target motor.
+ * @param position Pointer to store the received position.
+ * @param speed Pointer to store the received speed.
+ * @param torque Pointer to store the received torque.
+ * @param temperature Pointer to store the received temperature.
+ * @param error Pointer to store the received error code.
+ */
 void cubemars_get_can_msg(uint8_t *RxData, int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error) {
 	// Define local variables
 	//float position, speed, torque, temperature;
@@ -107,6 +158,17 @@ void cubemars_get_can_msg(uint8_t *RxData, int target_id, float *position, float
 
 // (p. 44)
 // Receiving Example Code
+/**
+ * @brief Unpacks a received CAN message into motor data.
+ *
+ * @param data The received CAN data buffer (8 bytes).
+ * @param target_id The ID of the target motor.
+ * @param position Pointer to store the unpacked position.
+ * @param speed Pointer to store the unpacked speed.
+ * @param torque Pointer to store the unpacked torque.
+ * @param temperature Pointer to store the unpacked temperature.
+ * @param error Pointer to store the unpacked error code.
+ */
 void unpack_reply(uint8_t data[8], int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error) {
 	/// unpack ints from can buffer ///
 	int id = data[0]; 								// Driver ID
@@ -132,14 +194,103 @@ void unpack_reply(uint8_t data[8], int target_id, float *position, float *speed,
 	}
 }
 
+/**
+ * @brief Processes a received CAN message for debugging purposes,
+ * 		  emulating a motor receiving the command (though without sending feedback),
+ * 		  useful for confirming that data is transmitted correctly.
+ *
+ * @param RxData Pointer to the received CAN data buffer (8 bytes).
+ */
+void cubemars_get_can_cmd4debug(uint8_t *RxData) {
+	// Print raw data
+	print_raw_data(RxData);
+
+	// Define local variables
+	float p_ref, v_ref, kp_ref, kd_ref, t_ref;
+
+	// Unpack received message
+	unpack_cmd4debug(RxData, &p_ref, &v_ref, &kp_ref, &kd_ref, &t_ref);
+
+	// Print data and fault description
+	print_cmd4debug(p_ref, v_ref, kp_ref, kd_ref, t_ref);
+}
+
+/**
+ * @brief Unpacks a received CAN message into command data.
+ *
+ * @param data The received CAN data buffer (8 bytes).
+ * @param p_ref Pointer to store the unpacked desired position.
+ * @param v_ref Pointer to store the unpacked desired speed.
+ * @param kp_ref Pointer to store the unpacked proportional gain.
+ * @param kd_ref Pointer to store the unpacked derivative gain.
+ * @param t_ref Pointer to store the unpacked feedforward torque.
+ */
+void unpack_cmd4debug(uint8_t data[8], float *p_ref, float *v_ref, float *kp_ref, float *kd_ref, float *t_ref) {
+	/// unpack ints from can buffer ///
+	int p_int = (data[0] << 8) |  data[1]; 			// Motor Position Data
+	int v_int = (data[2] << 4) | (data[3]>>4); 		// Motor Speed Data
+	int kp_int = ((data[3] & 0xF) << 8) | data[4];	// Motor Torque Data
+	int kd_int = ((data[5] & 0xF) << 8) | data[6];	// Motor Temperature Data
+	int t_int = ((data[6] & 0xF) << 8) | data[7];	// Motor Error Code
+
+	/// convert ints to floats ///
+	float p_des = uint_to_float( p_int,   P_MIN,  P_MAX, 16);
+	float v_des = uint_to_float( v_int,   V_MIN,  V_MAX, 12);
+	float kp =    uint_to_float(kp_int, -KP_MIN, KP_MAX, 12);
+	float kd =    uint_to_float(kd_int, -KD_MIN, KD_MAX, 12);
+	float t_ff =  uint_to_float( t_int,  -T_MIN,  T_MAX, 12);
+
+	// Read corresponding data
+	*p_ref = p_des;
+	*v_ref = v_des;
+	*kp_ref = kp;
+	*kd_ref = kd;
+	*t_ref = t_ff;
+}
+
+/**
+ * @brief Prints raw CAN data for debugging purposes.
+ *
+ * @param data The received CAN data buffer (8 bytes).
+ */
+void print_raw_data(uint8_t data[8]) {
+    printf("Raw Data: %d %d %d %d %d %d %d %d\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+}
+
+/**
+ * @brief Prints motor data (position, speed, torque, and temperature).
+ *
+ * @param position Motor position.
+ * @param speed Motor speed.
+ * @param torque Motor torque.
+ * @param temperature Motor temperature.
+ */
 void print_motor_data(float position, float speed, float torque, float temperature) {
     printf("Position = %f, Speed = %f, Torque = %f, Temp = %f\n", position, speed, torque, temperature);
 }
 
+/**
+ * @brief Prints unpacked command data for debugging purposes.
+ *
+ * @param p_ref Desired position.
+ * @param v_ref Desired speed.
+ * @param kp_ref Proportional gain.
+ * @param kd_ref Derivative gain.
+ * @param t_ref Desired feedforward torque.
+ */
+void print_cmd4debug(float p_ref, float v_ref, float kp_ref, float kd_ref, float t_ref) {
+    printf("CMD Received: p_des = %f, v_des = %f, kp = %f, kd = %f, t_ff = %f\n", p_ref, v_ref, kp_ref, kd_ref, t_ref);
+}
+
+/**
+ * @brief Prints a description of a motor fault based on the error code.
+ *
+ * @param error_code The motor error code.
+ */
 void print_motor_error(mc_fault_code error_code) {
     switch (error_code) {
         case FAULT_CODE_NONE:
-            printf("No fault detected.\n"); // This line can be removed when functionality has been confirmed
+            printf("No fault detected.\n"); // This line can be removed/commented out when functionality has been confirmed
             break;
         case FAULT_CODE_OVER_VOLTAGE:
             printf("Fault: Over Voltage.\n");
