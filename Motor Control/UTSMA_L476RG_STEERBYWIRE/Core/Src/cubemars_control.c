@@ -1,13 +1,35 @@
-/*
- * CubeMars_Functions.c
+/**
+ * @file cubemars_control.c
+ * @brief Implementation of functions for controlling CubeMars motors via CAN communication.
  *
- *  Created on: Nov 11, 2024
- *      Author: thomaskjeldsen
+ * This source file implements the functions declared in cubemars_control.h.
+ * It provides functionality for:
+ * - Packing and sending control commands to CubeMars motors in MIT Control Mode.
+ * - Receiving and unpacking feedback from the motors.
+ * - Printing motor states and error information for debugging.
+ *
+ * Dependencies:
+ * - STM32 HAL library (for CAN communication).
+ * - The CubeMars motor manual for parameter ranges and command details.
+ *
+ * Many of the functions in this document are based on example code in the
+ * AK Series Module Driver User Manual V1.0.15.X, as referenced in the function comments below.
+ *
+ * Setup:
+ * - Initialize the CAN peripheral before calling these functions.
+ * - Ensure proper configuration of the CAN bus (baud rate, filters, etc.).
+ *
+ * Note:
+ * Floating-point support for `printf` is required to print motor data and debugging information.
+ *
+ * Developed for UTS Motorsports Autonomous
+ * Project 29 by Team 21
+ * 43019 Design in Mechanical and Mechatronic Systems
+ * University of Technology Sydney
+ * November 2024
  */
 
 #include "cubemars_control.h"
-
-/// 5.3 MIT Mode Communication Protocol ///
 
 // Special CAN Commands
 const uint8_t CAN_CMD_ENTER_MOTOR_CONTROL_MODE[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC};
@@ -15,6 +37,7 @@ const uint8_t CAN_CMD_EXIT_MOTOR_CONTROL_MODE[8]  = {0xFF, 0xFF, 0xFF, 0xFF, 0xF
 const uint8_t CAN_CMD_SET_ORIGIN[8]               = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE};
 const uint8_t CAN_CMD_READ_STATE[8]               = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC};
 
+// Parameter Ranges
 const float P_MIN =-12.5f;
 const float P_MAX = 12.5f;
 const float V_MIN =-50.0f;
@@ -26,10 +49,8 @@ const float KP_MAX = 500.0f;
 const float KD_MIN = 0;
 const float KD_MAX = 5.0f;
 
-// (p. 44)
-// When sending packets, all numbers need to go through the following function to be converted into integer values before being sent to the motor:
 /**
- * @brief Converts a float value into an unsigned integer within a specified range and resolution.
+ * @brief Converts a float value into an unsigned integer within a specified range and resolution. (AK Series User Manual, p. 44)
  *
  * @param x The input float value to convert.
  * @param x_min The minimum value of the range.
@@ -45,10 +66,8 @@ int float_to_uint(float x, float x_min, float x_max, unsigned int bits) {
 	return (int) ((x - x_min) * ((float)((1 << bits) / span)));
 }
 
-// (p. 44)
-// When receiving, convert all values to floating-point numbers using the following function:
 /**
- * @brief Converts an unsigned integer into a float within a specified range and resolution.
+ * @brief Converts an unsigned integer into a float within a specified range and resolution. (AK Series User Manual, p. 44)
  *
  * @param x_int The input unsigned integer to convert.
  * @param x_min The minimum value of the range.
@@ -56,26 +75,24 @@ int float_to_uint(float x, float x_min, float x_max, unsigned int bits) {
  * @param bits The number of bits used to represent the unsigned integer.
  * @return The converted float value.
  */
-float uint_to_float(int x_int, float x_min, float x_max, int bits) {
+float uint_to_float(int x_int, float x_min, float x_max, unsigned int bits) {
 	/// converts unsigned int to float, given range and number of bits ///
 	float span = x_max - x_min;
 	float offset = x_min;
 	return ((float)x_int) * span / ((float)((1 << bits) - 1)) + offset;
 }
 
-// MIT Mode Sending&Receiving Code Example (p. 43)
-// Sending Example Code:
 /**
- * @brief Packs control parameters into an 8-byte CAN data buffer for transmission.
+ * @brief Packs control parameters into an 8-byte CAN data buffer for transmission. (AK Series User Manual, p. 43)
  *
- * @param data Pointer to the 8-byte CAN data buffer.
+ * @param data The 8-byte CAN data buffer.
  * @param p_des Desired position.
  * @param v_des Desired speed.
  * @param kp Proportional gain.
  * @param kd Derivative gain.
  * @param t_ff Feedforward torque.
  */
-void pack_cmd(uint8_t *data, float p_des, float v_des, float kp, float kd, float t_ff) {
+void pack_cmd(uint8_t data[8], float p_des, float v_des, float kp, float kd, float t_ff) {
 	/// limit data to be within bounds ///
 	p_des = fminf(fmaxf(P_MIN, p_des), P_MAX);
 	v_des = fminf(fmaxf(V_MIN, v_des), V_MAX);
@@ -101,7 +118,6 @@ void pack_cmd(uint8_t *data, float p_des, float v_des, float kp, float kd, float
 	data[7] = t_int & 0xFF; 						// Torque Low 8 bits
 }
 
-// Function to send command
 /**
  * @brief Sends a command to the CubeMars motor via CAN.
  *
@@ -133,35 +149,9 @@ void cubemars_send_can_cmd(CAN_HandleTypeDef *hcan, CAN_TxHeaderTypeDef *TxHeade
 }
 
 /**
- * @brief Processes a received CAN message from the CubeMars motor.
+ * @brief Unpacks a received CAN message into motor data. (AK Series User Manual, p. 44)
  *
- * @param RxData Pointer to the received CAN data buffer (8 bytes).
- * @param target_id The ID of the target motor.
- * @param position Pointer to store the received position.
- * @param speed Pointer to store the received speed.
- * @param torque Pointer to store the received torque.
- * @param temperature Pointer to store the received temperature.
- * @param error Pointer to store the received error code.
- */
-void cubemars_get_can_msg(uint8_t *RxData, int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error) {
-	// Define local variables
-	//float position, speed, torque, temperature;
-	//mc_fault_code error;
-
-	// Unpack received message
-	unpack_reply(RxData, target_id, position, speed, torque, temperature, error);
-
-	// Print data and fault description
-	print_motor_data(*position, *speed, *torque, *temperature);
-	print_motor_error(*error);
-}
-
-// (p. 44)
-// Receiving Example Code
-/**
- * @brief Unpacks a received CAN message into motor data.
- *
- * @param data The received CAN data buffer (8 bytes).
+ * @param data The received 8-byte CAN data buffer.
  * @param target_id The ID of the target motor.
  * @param position Pointer to store the unpacked position.
  * @param speed Pointer to store the unpacked speed.
@@ -195,30 +185,33 @@ void unpack_reply(uint8_t data[8], int target_id, float *position, float *speed,
 }
 
 /**
- * @brief Processes a received CAN message for debugging purposes,
- * 		  emulating a motor receiving the command (though without sending feedback),
- * 		  useful for confirming that data is transmitted correctly.
+ * @brief Processes a received CAN message from the CubeMars motor.
  *
- * @param RxData Pointer to the received CAN data buffer (8 bytes).
+ * @param data The received 8-byte CAN data buffer.
+ * @param target_id The ID of the target motor.
+ * @param position Pointer to store the received position.
+ * @param speed Pointer to store the received speed.
+ * @param torque Pointer to store the received torque.
+ * @param temperature Pointer to store the received temperature.
+ * @param error Pointer to store the received error code.
  */
-void cubemars_get_can_cmd4debug(uint8_t *RxData) {
-	// Print raw data
-	print_raw_data(RxData);
-
+void cubemars_get_can_msg(uint8_t data[8], int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error) {
 	// Define local variables
-	float p_ref, v_ref, kp_ref, kd_ref, t_ref;
+	//float position, speed, torque, temperature;
+	//mc_fault_code error;
 
 	// Unpack received message
-	unpack_cmd4debug(RxData, &p_ref, &v_ref, &kp_ref, &kd_ref, &t_ref);
+	unpack_reply(data, target_id, position, speed, torque, temperature, error);
 
 	// Print data and fault description
-	print_cmd4debug(p_ref, v_ref, kp_ref, kd_ref, t_ref);
+	print_motor_data(*position, *speed, *torque, *temperature);
+	print_motor_error(*error);
 }
 
 /**
  * @brief Unpacks a received CAN message into command data.
  *
- * @param data The received CAN data buffer (8 bytes).
+ * @param data The received 8-byte CAN data buffer.
  * @param p_ref Pointer to store the unpacked desired position.
  * @param v_ref Pointer to store the unpacked desired speed.
  * @param kp_ref Pointer to store the unpacked proportional gain.
@@ -227,11 +220,11 @@ void cubemars_get_can_cmd4debug(uint8_t *RxData) {
  */
 void unpack_cmd4debug(uint8_t data[8], float *p_ref, float *v_ref, float *kp_ref, float *kd_ref, float *t_ref) {
 	/// unpack ints from can buffer ///
-	int p_int = (data[0] << 8) |  data[1]; 			// Motor Position Data
-	int v_int = (data[2] << 4) | (data[3]>>4); 		// Motor Speed Data
-	int kp_int = ((data[3] & 0xF) << 8) | data[4];	// Motor Torque Data
-	int kd_int = ((data[5] & 0xF) << 8) | data[6];	// Motor Temperature Data
-	int t_int = ((data[6] & 0xF) << 8) | data[7];	// Motor Error Code
+	int p_int = (data[0] << 8) | data[1];           // Motor Position Data
+	int v_int = (data[2] << 4) | (data[3] >> 4);    // Motor Speed Data
+	int kp_int = ((data[3] & 0xF) << 8) | data[4];	// Proportional Gain Data
+	int kd_int = (data[5] << 4) | (data[6] >> 4);   // Derivative Gain Data
+	int t_int = ((data[6] & 0xF) << 8) | data[7];   		// Feedforward Torque Data
 
 	/// convert ints to floats ///
 	float p_des = uint_to_float( p_int,   P_MIN,  P_MAX, 16);
@@ -249,12 +242,30 @@ void unpack_cmd4debug(uint8_t data[8], float *p_ref, float *v_ref, float *kp_ref
 }
 
 /**
+ * @brief Processes a received CAN message for debugging purposes,
+ * 		  emulating a motor receiving the command (though without sending feedback),
+ * 		  useful for confirming that data is transmitted correctly.
+ *
+ * @param data The received 8-byte CAN data buffer.
+ */
+void cubemars_get_can_cmd4debug(uint8_t data[8]) {
+	// Define local variables
+	float p_ref, v_ref, kp_ref, kd_ref, t_ref;
+
+	// Unpack received message
+	unpack_cmd4debug(data, &p_ref, &v_ref, &kp_ref, &kd_ref, &t_ref);
+
+	// Print data and fault description
+	print_cmd4debug(p_ref, v_ref, kp_ref, kd_ref, t_ref);
+}
+
+/**
  * @brief Prints raw CAN data for debugging purposes.
  *
- * @param data The received CAN data buffer (8 bytes).
+ * @param data The received 8-byte CAN data buffer.
  */
 void print_raw_data(uint8_t data[8]) {
-    printf("Raw Data: %d %d %d %d %d %d %d %d\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    printf("RAW Data: %d %d %d %d %d %d %d %d\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 }
 
 /**
@@ -266,7 +277,7 @@ void print_raw_data(uint8_t data[8]) {
  * @param temperature Motor temperature.
  */
 void print_motor_data(float position, float speed, float torque, float temperature) {
-    printf("Position = %f, Speed = %f, Torque = %f, Temp = %f\n", position, speed, torque, temperature);
+    printf("Motor Data Received: Position = %f, Speed = %f, Torque = %f, Temp = %f\n", position, speed, torque, temperature);
 }
 
 /**

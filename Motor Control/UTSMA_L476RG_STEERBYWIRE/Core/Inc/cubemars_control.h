@@ -1,8 +1,27 @@
-/*
- * CubeMars_Functions.h
+/**
+ * @file cubemars_control.h
+ * @brief Interface for controlling CubeMars motors via CAN communication.
  *
- *  Created on: Nov 11, 2024
- *      Author: thomaskjeldsen
+ * This header file defines the constants, types, and function prototypes
+ * for sending and receiving commands to/from CubeMars motors using the CAN bus.
+ * It includes the implementation of packing and unpacking commands, processing
+ * motor states, and error handling for CubeMars motors.
+ *
+ * Usage:
+ * Include this file in source files that interact with CubeMars motors.
+ *
+ * Note:
+ * Ensure the CAN peripheral is initialized correctly before using these functions.
+ * Refer to the CubeMars motor manual for detailed parameter and command descriptions.
+ *
+ * Dependencies:
+ * - STM32 HAL library (for CAN_HandleTypeDef and CAN_TxHeaderTypeDef)
+ *
+ * Developed for UTS Motorsports Autonomous
+ * Project 29 by Team 21
+ * 43019 Design in Mechanical and Mechatronic Systems
+ * University of Technology Sydney
+ * November 2024
  */
 
 #ifndef SRC_CUBEMARS_FUNCTIONS_H_
@@ -16,6 +35,7 @@ extern const uint8_t CAN_CMD_EXIT_MOTOR_CONTROL_MODE[8];
 extern const uint8_t CAN_CMD_SET_ORIGIN[8];
 extern const uint8_t CAN_CMD_READ_STATE[8];
 
+// Parameter Ranges
 extern const float P_MIN;
 extern const float P_MAX;
 extern const float V_MIN;
@@ -51,18 +71,18 @@ typedef enum {
 	FAULT_CODE_UNBALANCED_CURRENTS,					// Unbalanced currents
 } mc_fault_code;
 
-// Function Definitions
+// Function Prototypes
 int   float_to_uint(float x,   float x_min, float x_max, unsigned int bits);
-float uint_to_float(int x_int, float x_min, float x_max, int bits);
-void pack_cmd(uint8_t *data, float p_des, float v_des, float kp, float kd, float t_ff);
+float uint_to_float(int x_int, float x_min, float x_max, unsigned int bits);
+void pack_cmd(uint8_t data[8], float p_des, float v_des, float kp, float kd, float t_ff);
 void cubemars_send_can_cmd(CAN_HandleTypeDef *hcan, CAN_TxHeaderTypeDef *TxHeader, uint32_t *TxMailbox, float p_des, float v_des, float kp, float kd, float t_ff);
-void cubemars_get_can_msg(uint8_t *RxData, int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error);
 void unpack_reply(uint8_t data[8], int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error);
-void cubemars_get_can_cmd4debug(uint8_t *RxData);
+void cubemars_get_can_msg(uint8_t data[8], int target_id, float *position, float *speed, float *torque, float *temperature, mc_fault_code *error);
 void unpack_cmd4debug(uint8_t data[8], float *p_ref, float *v_ref, float *kp_ref, float *kd_ref, float *t_ref);
+void cubemars_get_can_cmd4debug(uint8_t data[8]);
 void print_raw_data(uint8_t data[8]);
-void print_cmd4debug(float p_ref, float v_ref, float kp_ref, float kd_ref, float t_ref);
 void print_motor_data(float position, float speed, float torque, float temperature);
+void print_cmd4debug(float p_ref, float v_ref, float kp_ref, float kd_ref, float t_ref);
 void print_motor_error(mc_fault_code error_code);
 
 #endif /* SRC_CUBEMARS_FUNCTIONS_H_ */

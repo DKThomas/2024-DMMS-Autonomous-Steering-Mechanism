@@ -1,11 +1,18 @@
 /*
  * CubeMars_FunctionsAndExamples.c
  *
- * Functions and examples from "AK Series Module Driver User Manual.pdf" by CubeMars
- * Copied from manual. Some effort has been made to correct syntax errors.
+ * Some functions and examples from "AK Series Module Driver User Manual.pdf" by CubeMars.
+ * Functions are copied from manual. Some effort has been made to correct syntax errors.
  *
- *  Created on: Oct 29, 2024
- *      Author: thomaskjeldsen
+ * Note:
+ * Exclude this file from build to avoid errors.
+ * Modified functions are implemented in cubemars_control.c.
+ *
+ * Developed for UTS Motorsports Autonomous
+ * Project 29 by Team 21
+ * 43019 Design in Mechanical and Mechatronic Systems
+ * University of Technology Sydney
+ * November 2024
  */
 
 /// 5.1 Servo Mode Control Modes and Explanation ///
@@ -64,9 +71,9 @@ void comm_can_set_pos_spd(uint8_t controller_id, float pos, int16_t spd, int16_t
 // 5.2.1 Servo Mode CAN Upload Message Protocol (p. 32)
 // Example of Receiving Message
 void motor_receive(float* motor_pos, float* motor_spd, float* cur, int_8* temp, int_8* error, rx_message) {
-	int16_t pos_int = (rx_message)->Data[0] << 8 | (rx_message)->Data[1]);
-	int16_t spd_int = (rx_message)->Data[2] << 8 | (rx_message)->Data[3]);
-	int16_t cur_int = (rx_message)->Data[4] << 8 | (rx_message)->Data[5]);
+	int16_t pos_int = ((rx_message)->Data[0] << 8) | (rx_message)->Data[1];
+	int16_t spd_int = ((rx_message)->Data[2] << 8) | (rx_message)->Data[3];
+	int16_t cur_int = ((rx_message)->Data[4] << 8) | (rx_message)->Data[5];
 	&motor_pos= (float)( pos_int * 0.1f); // Motor Position
 	&motor_spd= (float)( spd_int * 10.0f);// Motor Speed
 	&motor_cur= (float) ( cur_int * 0.01f);// Motor Current

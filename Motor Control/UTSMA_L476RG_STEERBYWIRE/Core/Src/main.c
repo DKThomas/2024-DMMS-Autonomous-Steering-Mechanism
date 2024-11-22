@@ -63,21 +63,20 @@ int value_2;
 int adcValue;
 GPIO_PinState buttonValue;
 
+// CAN IDs
+uint32_t CAN_SENDER_ID = 4; // for sending command
+int      CAN_LISTEN_ID = 4; // for listening to reply
+
+// Variables for sending motor command
 float Pos_ref;
 float Vel_ref = 0;
 float Kp = 0.5;
 float Kd = 0.2;
 float Trq_ff = 0;
 
-uint32_t CAN_SENDER_ID = 1;
-int      CAN_LISTEN_ID = 4;
-
+// Variables for receiving motor message
 float position, speed, torque, temperature;
 mc_fault_code error;
-
-// For debugging
-int control = 0;
-
 
 /* USER CODE END PV */
 
@@ -201,7 +200,7 @@ int main(void)
   }
 
 
-  TxHeader.StdId=CAN_SENDER_ID;
+  TxHeader.StdId=CAN_SENDER_ID; // 0x201
   TxHeader.ExtId=0;
   TxHeader.RTR=CAN_RTR_DATA;
   TxHeader.IDE=CAN_ID_STD;
@@ -221,6 +220,53 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  // /* Read potentiometer value
+	  if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK) { // Wait up to 100ms
+	      adcValue = HAL_ADC_GetValue(&hadc1);
+	      //printf("ADC Value: %d\n", adcValue);
+	  } else {
+	      printf("ADC Conversion Timeout or Error\n");
+	  }
+	  HAL_ADC_Start(&hadc1); // Restart ADC to be ready for next measurement
+	  // */
+
+	  // Read state of blue button
+	  buttonValue = HAL_GPIO_ReadPin(RES_BUTTON_GPIO_Port, RES_BUTTON_Pin);
+
+	  // /* Simple transmission to test connection between MCUs
+	  adcValue = map(adcValue, 0, 4095, 0, 255);
+	  TxData[0] = adcValue;
+	  TxData[1] = increment++;
+	  TxData[2] = 123;
+	  TxData[3] = buttonValue;
+	  HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
+	  // */
+
+	  /* Enter and exit Motor Control Mode to test connection
+	  if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, CAN_CMD_ENTER_MOTOR_CONTROL_MODE, &TxMailbox) == HAL_OK) {
+		  printf("Enter Command Sent.\n");
+	  }
+	  HAL_Delay(1000);
+	  if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, CAN_CMD_EXIT_MOTOR_CONTROL_MODE, &TxMailbox) == HAL_OK) {
+		  printf("Exit Command Sent.\n");
+	  }
+	  HAL_ADC_Start(&hadc1);
+	  HAL_Delay(750);
+	  */
+
+	  /* Send command to motor
+	  Pos_ref = map(adcValue, 0, 4095, 0, M_TWOPI);
+	  Vel_ref = 0;
+	  Kp = 0.5;
+	  Kd = 0.2;
+	  Trq_ff = 0; // 2 * (float)!HAL_GPIO_ReadPin(RES_BUTTON_GPIO_Port, RES_BUTTON_Pin); // Optionally, give the motor a 2Nm feedforward torque when button is pressed
+	  cubemars_send_can_cmd(&hcan1, &TxHeader, &TxMailbox, Pos_ref, Vel_ref, Kp, Kd, Trq_ff);
+	  */
+
+	  HAL_Delay(250);
+
+	  /// ORIGINAL VERSION BELOW ///
+/*
 //	  HAL_CAN_AddTxMessage(&hcan1,&TxHeader,TxData,&TxMailbox); //HAL_Delay(500);
 //	  TxData[1] = value++;
 //	  TxData[5] = value++;
@@ -228,50 +274,18 @@ int main(void)
 //	  printf("CAN Rx: %d %d %d %d %d %d %d %d \r\n", RxHeader.StdId, RxData[0], RxData[1], RxData[2], RxData[3], RxData[4], RxData[5], RxData[6], RxData[7]);
 	  //printf("Rx %d \r\n", value_2);
 
-	  // Transmit potentiometer angle to motor
-	  /*HAL_StatusTypeDef status = HAL_ADC_PollForConversion(&hadc1, 100); // Wait up to 100ms
-	  if (status == HAL_OK) {
-	      uint32_t adcValue = HAL_ADC_GetValue(&hadc1);
-	      printf("ADC Value: %lu\r\n", adcValue);
-	  } else {
-	      printf("ADC Conversion Timeout or Error\r\n");
-	  }
-
-	  if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, CAN_CMD_ENTER_MOTOR_CONTROL_MODE, &TxMailbox) == HAL_OK) {
-		  printf("Enter.\n");
-	  }
-	  HAL_Delay(1000);
-	  if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, CAN_CMD_EXIT_MOTOR_CONTROL_MODE, &TxMailbox) == HAL_OK) {
-		  printf("Exit.\n");
-	  }
 	  HAL_ADC_Start(&hadc1);
-	  HAL_Delay(750);
-
-	  Pos_ref = map(adcValue, 0, 4095, 0, M_TWOPI);
-	  Vel_ref = 1.1;
-	  Kp = 0.5;
-	  Kd = 0.2;
-	  Trq_ff = (float)HAL_GPIO_ReadPin(RES_BUTTON_GPIO_Port, RES_BUTTON_Pin); */
-	  //cubemars_send_can_cmd(&hcan1, &TxHeader, &TxMailbox, Pos_ref, Vel_ref, Kp, Kd, Trq_ff);
-
-
-	  // Simple transmission
-	  /* buttonValue = HAL_GPIO_ReadPin(RES_BUTTON_GPIO_Port, RES_BUTTON_Pin);
+//
+//
 	  adcValue = map(HAL_ADC_GetValue(&hadc1), 0, 4095, 0, 255);
 	  TxData[0] = adcValue;
 	  TxData[1] = increment++;
-	  TxData[2] = buttonValue;
+	  TxData[2] = 123;
 	  HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
-	  //printf("CAN Tx: %d %d ADC Value %d \r\n", TxHeader.StdId, TxData[0], TxData[1], adcValue);
-	  printf("CAN Rx: %d %d %d %d \r\n", RxHeader.StdId, RxData[0], RxData[1], RxData[2]); */
-	  //printf("ADC Value: %d \r\n", adcValue);
-
-	  //HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-	  //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !buttonValue);
-	  //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !RxData[2]);
-
+	  printf("CAN Tx: %d %d ADC Value %d \r\n", TxHeader.StdId, TxData[0], TxData[1], adcValue);
+//	  printf("ADC Value: %d \r\n", adcValue);
 	  HAL_Delay(250);
-
+*/
 
     /* USER CODE END WHILE */
 
@@ -859,10 +873,19 @@ void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan)
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	HAL_CAN_GetRxMessage(&hcan1,CAN_RX_FIFO0,&RxHeader,RxData);
-	//printf("CAN Rx: %d %d %d %d %d %d %d %d %d \r\n", RxHeader.StdId, RxData[0], RxData[1], RxData[2], RxData[3], RxData[4], RxData[5], RxData[6], RxData[7]);
+
+	// Print raw data
+	print_raw_data(RxData);
+
+	// Process received message from motor
 	//cubemars_get_can_msg(RxData, CAN_LISTEN_ID, &position, &speed, &torque, &temperature, &error);
-	cubemars_get_can_cmd4debug(RxData);
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !RxData[1]);
+
+	// Process received command, emulating a motor receiving the command (for debugging purposes)
+	//cubemars_get_can_cmd4debug(RxData);
+
+	// Light LD2 based on received data (for confirming connection)
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !RxData[3]);
+
 	value++;
 	//printf("Rx %d \r\n", value);
 }
