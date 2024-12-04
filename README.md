@@ -9,26 +9,27 @@ This repository is organized into three main folders:
 
 ### **`CAD/`**
 This folder contains all CAD resources required for the project, including individual components, assembly files and installation guides.
-- **`Enclosure/`**: CAD files for the protective housing of the system.
-- **`FINAL design/`**: Finalized design files representing the complete system.
-- **`Guide to Installation`**: Step-by-step guide for installing and assembling the mechanical system.
+- **`Enclosure/`**: CAD files for the protective housing of the system (old design).
+- **`FINAL design/`**: Finalized design files representing the complete system. Refer to this folder for the final design with BOM and installation guide.
+- **`Motor Mount/`**: CAD models and technical drawings for mounting the motor (old designs).
 - **`Motor/`**: CAD models of the CubeMars AK80-9 motor.
-- **`Motor Mount/`**: CAD models and technical drawings for mounting the motor.
-- **`Template/`**: Driver template for compliance with FSAE rules.
+- **`Template/`**: CAD model of driver template for compliance with FSAE rules.
+- **`Wedge Model/`**: CAD models of wedge plate (old designs).
 
 ### **`Documentation/`**
 This folder provides insight to the development process of the project.
 - **`Calculations/`**: Relevant calculations supporting the design.
 - **`Competition Rules/`**: Official FSAE 2024 rules.
 - **`Ideation Sketches/`**: Early conceptual sketches and ideas that led to the project’s development.
-- **`Main Report`**: The primary report summarizing the project's goals, progress and results.
-- **`Project Management/`**: Other project planning resources.
-- **`Project Proposal`**: Initial proposal outlining the project's proposed objectives, scope, and deliverables.
+- **`Project Management/`**: Other project management resources.
 - **`Reference Designs/`**: External design references used during the project’s development.
+- **`Main Report`**: The primary report summarizing the project’s goals, progress and results.
+- **`Project Proposal`**: Initial proposal outlining the project’s proposed objectives, scope and deliverables.
 
 ### **`Motor Control/`**
 This folder focuses on the software and resources needed for motor control and implementation.
-- **`AK Series Module Driver User Manual`**: User manual for the CubeMars AK series motors.
 - **`Block Diagrams/`**: Visual representations of motor control architectures.
-- **`Guide for CubeMars Motors`**: A practical guide for setting up and operating CubeMars motors.
+- **`NUCLEO-L476RG/`**: Ressources related to the STM32 NUCLEO-L476RG development board.
 - **`UTSMA_L476RG_STEERBYWIRE/`**: Source code for the motor control system for CAN communication using the STM32 NUCLEO-L476RG microcontroller.
+- **`AK Series Module Driver User Manual`**: User manual for the CubeMars AK series motors.
+- **`Guide for CubeMars Motors`**: A practical guide for setting up and operating CubeMars motors using CubeMars software and documentation of developed code for STM32.
