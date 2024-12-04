@@ -1,5 +1,5 @@
 # **Project Overview**
-Welcome to the repository for the project **Design of an autonomous steering mechanism for UTS Motorsports Autonomous** (**Project 29** by **Team 21** in **43019 Design in Mechanical and Mechatronic Systems** at **University of Technology Sydney** in **Spring 2024**). 
+Welcome to the repository for the project **Design of an Autonomous Steering Mechanism for UTS Motorsports Autonomous** (**Project 29** by **Team 21** in **43019 Design in Mechanical and Mechatronic Systems** at **University of Technology Sydney** in **Spring 2024**). 
 
 ---
 
